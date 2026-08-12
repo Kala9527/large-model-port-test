@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>大模型端口测试工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <div class="title-row">
+          <div>
+            <h1>大模型端口测试工具</h1>
+            <p>按提供商 URL 与请求协议选择预设，固定发送 <code>Hi</code> 并展示真实接口响应。</p>
+          </div>
+          <span class="badge">默认端口 5181</span>
+        </div>
+
+        <form class="test-form" method="post" action="/test">
+          <div class="grid">
+            <label>
+              <span>提供商 URL / 请求协议</span>
+              <select id="provider_id" name="provider_id">
+                {% for preset in provider_presets %}
+                  <option value="{{ preset.id }}" {% if form.provider_id == preset.id %}selected{% endif %}>
+                    [{{ preset.category }}] {{ preset.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </label>
+
+            <label>
+              <span>调用方式</span>
+              <select id="call_mode" name="call_mode">
+                <option value="auto" {% if form.call_mode == "auto" %}selected{% endif %}>自动逐个尝试</option>
+                {% for method in call_methods %}
+                  <option value="{{ method.name }}" {% if form.call_mode == method.name %}selected{% endif %}>
+                    {{ method.label }}
+                  </option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+
+          <div id="provider_description" class="provider-description"></div>
+
+          <label>
+            <span>模型服务 Base URL</span>
+            <input
+              id="base_url"
+              name="base_url"
+              type="url"
+              required
+              placeholder="例如：https://api.openai.com/v1"
+              value="{{ form.base_url }}"
+            >
+          </label>
+
+          <div class="grid">
+            <label>
+              <span>api_key</span>
+              <input
+                name="api_key"
+                type="password"
+                autocomplete="off"
+                placeholder="例如：sk-..."
+              >
+            </label>
+
+            <label>
+              <span>模型_id / deployment name</span>
+              <input
+                id="model_id"
+                name="model_id"
+                required
+                placeholder="请输入目标服务实际可用的模型 ID 或 Azure deployment name"
+                value="{{ form.model_id }}"
+              >
+            </label>
+          </div>
+
+          {% if form.api_key_preview %}
+            <div class="key-preview">上次提交 key：<code>{{ form.api_key_preview }}</code></div>
+          {% endif %}
+
+          <div class="grid">
+            <label>
+              <span>超时时间（秒）</span>
+              <input
+                name="timeout_seconds"
+                type="number"
+                min="1"
+                max="600"
+                step="1"
+                value="{{ form.timeout_seconds }}"
+              >
+            </label>
+
+            <label>
+              <span>temperature</span>
+              <input
+                name="temperature"
+                type="number"
+                min="0"
+                max="2"
+                step="0.1"
+                value="{{ form.temperature }}"
+              >
+            </label>
+          </div>
+
+          <label>
+            <span>API Version（Azure / Anthropic 等需要时填写）</span>
+            <input
+              id="api_version"
+              name="api_version"
+              placeholder="例如：2024-10-21 或 2023-06-01"
+              value="{{ form.api_version }}"
+            >
+          </label>
+
+          <details id="custom_request_box" class="custom-box">
+            <summary>
+              <span>自定义请求</span>
+              <b>可选</b>
+            </summary>
+
+            <div class="grid">
+              <label>
+                <span>HTTP 方法</span>
+                <select id="custom_http_method" name="custom_http_method">
+                  {% for method_name in ["POST", "GET", "PUT", "PATCH", "DELETE"] %}
+                    <option value="{{ method_name }}" {% if form.custom_http_method == method_name %}selected{% endif %}>
+                      {{ method_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </label>
+
+              <label>
+                <span>请求路径</span>
+                <input
+                  id="custom_endpoint_path"
+                  name="custom_endpoint_path"
+                  placeholder="例如：/chat/completions，也可填完整 URL"
+                  value="{{ form.custom_endpoint_path }}"
+                >
+              </label>
+            </div>
+
+            <label>
+              <span>请求头 JSON</span>
+              <textarea id="custom_headers_json" name="custom_headers_json" rows="5" spellcheck="false">{{ form.custom_headers_json }}</textarea>
+            </label>
+
+            <label>
+              <span>请求体 JSON</span>
+              <textarea id="custom_body_json" name="custom_body_json" rows="9" spellcheck="false">{{ form.custom_body_json }}</textarea>
+            </label>
+
+            <div class="placeholder-row">
+              可用占位符：<code>{api_key}</code> <code>{model}</code> <code>{message}</code> <code>{temperature}</code> <code>{api_version}</code>
+            </div>
+          </details>
+
+          <button type="submit">开始真实调用测试</button>
+        </form>
+      </section>
+
+      {% if result %}
+        <section class="panel result-panel">
+          <div class="result-head">
+            <h2>测试结果</h2>
+            {% if result.success %}
+              <span class="status ok">成功</span>
+            {% else %}
+              <span class="status fail">失败</span>
+            {% endif %}
+          </div>
+
+          <dl class="summary">
+            <div>
+              <dt>结果</dt>
+              <dd>{{ result.message }}</dd>
+            </div>
+            <div>
+              <dt>成功调用方式</dt>
+              <dd>{{ result.successful_method or "无" }}</dd>
+            </div>
+            <div>
+              <dt>HTTP 状态码</dt>
+              <dd>{{ result.status_code if result.status_code is not none else "无" }}</dd>
+            </div>
+            <div>
+              <dt>请求地址</dt>
+              <dd class="breakable">{{ result.request_url }}</dd>
+            </div>
+          </dl>
+
+          {% if result.answer %}
+            <h3>模型回答内容</h3>
+            <pre class="answer">{{ result.answer }}</pre>
+          {% endif %}
+
+          {% if result.raw_response %}
+            <h3>原始响应</h3>
+            <pre>{{ result.raw_response }}</pre>
+          {% endif %}
+
+          {% if result.analysis %}
+            <h3>可能原因分析</h3>
+            <ul class="analysis">
+              {% for item in result.analysis %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+
+          {% if result.attempts %}
+            <h3>调用尝试记录</h3>
+            <div class="attempts">
+              {% for attempt in result.attempts %}
+                <details {% if loop.first %}open{% endif %}>
+                  <summary>
+                    <span>{{ attempt.method_label or attempt.method }}</span>
+                    {% if attempt.success %}
+                      <b class="mini-ok">成功</b>
+                    {% else %}
+                      <b class="mini-fail">失败</b>
+                    {% endif %}
+                  </summary>
+
+                  <dl class="attempt-meta">
+                    <div>
+                      <dt>HTTP 方法</dt>
+                      <dd>{{ attempt.http_method or "POST" }}</dd>
+                    </div>
+                    <div>
+                      <dt>HTTP 状态码</dt>
+                      <dd>{{ attempt.status_code if attempt.status_code is not none else "无" }}</dd>
+                    </div>
+                    <div>
+                      <dt>请求地址</dt>
+                      <dd class="breakable">{{ attempt.request_url }}</dd>
+                    </div>
+                    {% if attempt.exception_type %}
+                      <div>
+                        <dt>异常类型</dt>
+                        <dd>{{ attempt.exception_type }}</dd>
+                      </div>
+                    {% endif %}
+                    {% if attempt.error %}
+                      <div>
+                        <dt>原始报错</dt>
+                        <dd class="breakable">{{ attempt.error }}</dd>
+                      </div>
+                    {% endif %}
+                  </dl>
+
+                  <h4>请求头（已脱敏）</h4>
+                  <pre>{{ attempt.request_headers | tojson(indent=2) }}</pre>
+
+                  <h4>请求体</h4>
+                  <pre>{{ attempt.request_payload | tojson(indent=2) }}</pre>
+
+                  {% if attempt.raw_response %}
+                    <h4>原始响应</h4>
+                    <pre>{{ attempt.raw_response }}</pre>
+                  {% endif %}
+
+                  {% if attempt.analysis %}
+                    <h4>该方式失败分析</h4>
+                    <ul class="analysis compact">
+                      {% for item in attempt.analysis %}
+                        <li>{{ item }}</li>
+                      {% endfor %}
+                    </ul>
+                  {% endif %}
+                </details>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </section>
+      {% endif %}
+
+      <section class="panel reference">
+        <h2>常用协议示例</h2>
+        <div class="example-grid">
+          <div>
+            <h3>OpenAI 兼容</h3>
+            <pre>POST {base_url}/chat/completions
+Authorization: Bearer {api_key}
+Content-Type: application/json
+
+{
+  "model": "your-model-id",
+  "messages": [
+    {"role": "user", "content": "Hi"}
+  ],
+  "temperature": 0
+}</pre>
+          </div>
+          <div>
+            <h3>Anthropic Messages</h3>
+            <pre>POST {base_url}/v1/messages
+x-api-key: {api_key}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "claude-sonnet-4-5",
+  "max_tokens": 512,
+  "messages": [
+    {"role": "user", "content": "Hi"}
+  ]
+}</pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script id="provider-data" type="application/json">{{ provider_presets | tojson }}</script>
+    <script>
+      (function () {
+        const presets = JSON.parse(document.getElementById("provider-data").textContent);
+        const byId = Object.fromEntries(presets.map((item) => [item.id, item]));
+        const providerSelect = document.getElementById("provider_id");
+        const baseUrlInput = document.getElementById("base_url");
+        const callModeSelect = document.getElementById("call_mode");
+        const apiVersionInput = document.getElementById("api_version");
+        const descriptionBox = document.getElementById("provider_description");
+        const customBox = document.getElementById("custom_request_box");
+        const customMethod = document.getElementById("custom_http_method");
+        const customPath = document.getElementById("custom_endpoint_path");
+        const customHeaders = document.getElementById("custom_headers_json");
+        const customBody = document.getElementById("custom_body_json");
+
+        function setIfPresetValue(input, value) {
+          if (value) input.value = value;
+        }
+
+        function syncCustomBox() {
+          if (callModeSelect.value === "custom_request") {
+            customBox.open = true;
+          }
+        }
+
+        providerSelect.addEventListener("change", function () {
+          const preset = byId[providerSelect.value];
+          if (!preset) return;
+
+          setIfPresetValue(baseUrlInput, preset.base_url);
+          setIfPresetValue(apiVersionInput, preset.api_version);
+          if (preset.call_mode) callModeSelect.value = preset.call_mode;
+          if (preset.custom_http_method) customMethod.value = preset.custom_http_method;
+          if (preset.custom_endpoint_path) customPath.value = preset.custom_endpoint_path;
+          if (preset.custom_headers_json) customHeaders.value = preset.custom_headers_json;
+          if (preset.custom_body_json) customBody.value = preset.custom_body_json;
+          descriptionBox.textContent = preset.description || "";
+          syncCustomBox();
+        });
+
+        callModeSelect.addEventListener("change", syncCustomBox);
+
+        const current = byId[providerSelect.value];
+        if (current) descriptionBox.textContent = current.description || "";
+        syncCustomBox();
+      })();
+    </script>
+  </body>
+</html>
