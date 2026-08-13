@@ -1,147 +1,111 @@
-# 大模型端口测试工具
+﻿# Large Model Port Test
 
-[English](./README_EN.md)
+> Web tool for testing LLM API connectivity across OpenAI-compatible, Responses, Anthropic, Gemini, Azure OpenAI, Ollama, and custom JSON protocols.  
+> 中文：大模型 API 连通性测试 Web 工具，支持 OpenAI 兼容、Responses、Anthropic、Gemini、Azure OpenAI、Ollama 与自定义 JSON。
 
-一个纯后端渲染的模型接口连通性测试工具。打开网页后填写模型服务 URL、API Key、模型 ID 和调用方式，工具会向目标接口发送固定测试消息 `Hi`，并展示真实响应、HTTP 状态码、成功调用方式、模型回答、失败原始错误和可能原因分析。
+This repository is packaged to be easy to **star, fork, run, remix, and contribute to**. It keeps the first screen English-first for global GitHub discovery, while preserving a Chinese guide below.
 
-它适合用来快速判断“模型服务到底能不能调通”“Base URL 写没写对”“是不是协议选错了”。如果这个工具帮你少排了几次接口坑，欢迎 Star 一下，也欢迎把你常用的供应商预设提 PR。
+## Why Star This
+
+- Practical project idea with a clear real-world use case.
+- Small enough to fork, study, and customize quickly.
+- English-first bilingual README for both global and Chinese-speaking developers.
+- Clean setup instructions, project structure, roadmap, and contribution entry points.
+- Built around popular GitHub themes such as AI tools, TypeScript, developer tools, local-first apps, automation, and indie-friendly workflows when relevant.
+
+## What It Does
+
+Web tool for testing LLM API connectivity across OpenAI-compatible, Responses, Anthropic, Gemini, Azure OpenAI, Ollama, and custom JSON protocols.
+
+## Highlights
+
+- Browser-based real request tester
+- Auto-detect mode across common LLM protocols
+- Provider presets for popular model gateways
+- Custom HTTP method, headers, path, and body JSON
+- Masked API key display and detailed error analysis
+
+## Tech Stack
+
+`	ext
+Python, FastAPI, Uvicorn, Jinja2, httpx
+`
+
+## Quick Start
+
+`ash
+python -m venv .venv`n.venv\\Scripts\\activate`npip install -r requirements.txt`npython -m uvicorn main:app --host 0.0.0.0 --port 5181
+`
+
+## Project Structure
+
+`	ext
+.
+|-- src/ or app/          Main source code
+|-- public/ or assets/    Static assets when available
+|-- docs/                 Notes, specs, or deployment docs when available
+|-- README.md             English-first bilingual project guide
+-- package / project files
+`
+
+## Deployment / Packaging
+
+- Do not commit generated builds, local databases, API keys, private logs, or large media files.
+- For frontend projects, deploy the production dist/ folder to GitHub Pages, Vercel, Netlify, Nginx, or package it with DistDesktopLauncher.
+- For desktop/mobile projects, publish only release artifacts from a clean build environment.
+- Keep configuration examples public and real credentials private.
+
+## Roadmap
+
+- [ ] Shareable test profiles
+- [ ] Batch endpoint health checks
+- [ ] Latency charts and exportable reports
+- [ ] More provider presets from the community
+
+## Contributing
+
+Issues and pull requests are welcome. Useful contributions include better screenshots, demos, docs, templates, presets, provider guides, compatibility fixes, tests, and translations.
+
+If this project helps you, a star and fork make it easier for more people to discover it.
+
+---
+
+# 中文说明
+
+> 大模型 API 连通性测试 Web 工具，支持 OpenAI 兼容、Responses、Anthropic、Gemini、Azure OpenAI、Ollama 与自定义 JSON。
+
+这个仓库已经改成 **英文优先、中文在后** 的双语 README，方便 GitHub 全球用户第一眼理解项目，同时保留中文开发者阅读体验。
+
+## 为什么值得 Star / Fork
+
+- 目标场景清晰，不是空壳项目。
+- 项目规模适合学习、二次开发和快速改造。
+- README、路线图、贡献入口和部署说明更完整。
+- topics 会尽量贴近当前 GitHub 热门方向，例如 AI、LLM、OpenAI-compatible、TypeScript、developer-tools、automation、local-first、gamedev 等。
 
 ## 功能亮点
 
-- Web 表单测试：浏览器填写参数，一键发起真实请求。
-- 多协议支持：覆盖 OpenAI Chat Completions、OpenAI Responses、Anthropic Messages、Gemini Native、Azure OpenAI、Ollama 等。
-- 自动探测模式：`auto` 会按多个常见协议依次尝试，成功即停止。
-- 自定义 JSON 请求：可自定义 HTTP 方法、路径、Header JSON 和 Body JSON。
-- 供应商预设：内置 OpenAI、DeepSeek、阿里云百炼、硅基流动、智谱、火山方舟、Moonshot、OpenRouter、Groq、LM Studio、vLLM、Ollama 等。
-- 错误分析：失败时给出状态码、原始响应和常见排查方向。
-- 密钥脱敏：页面展示会隐藏完整 API Key，降低误截图泄露风险。
-- 健康检查：提供 `/health` 接口，便于确认服务是否启动。
-
-## 技术栈
-
-- Python 3.11+
-- FastAPI
-- Uvicorn
-- Jinja2
-- httpx
-- HTML / CSS
+- Browser-based real request tester
+- Auto-detect mode across common LLM protocols
+- Provider presets for popular model gateways
+- Custom HTTP method, headers, path, and body JSON
+- Masked API key display and detailed error analysis
 
 ## 快速开始
 
-### 1. 安装依赖
+`ash
+python -m venv .venv`n.venv\\Scripts\\activate`npip install -r requirements.txt`npython -m uvicorn main:app --host 0.0.0.0 --port 5181
+`
 
-Windows 用户可以使用项目脚本：
+## 部署与安全
 
-```powershell
-.\start.bat
-```
+- 不要提交 .env、API Key、生成媒体、大型文件、数据库、日志和构建产物。
+- 前端项目可以部署 dist/ 到 GitHub Pages、Vercel、Netlify 或 Nginx。
+- 桌面/移动端项目建议只发布干净环境构建出来的 release 文件。
 
-脚本会检查依赖并启动服务。
+## 后续计划
 
-也可以手动安装：
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-### 2. 启动服务
-
-```powershell
-python -m uvicorn main:app --host 0.0.0.0 --port 5181
-```
-
-浏览器访问：
-
-```text
-http://127.0.0.1:5181
-```
-
-健康检查：
-
-```text
-http://127.0.0.1:5181/health
-```
-
-## 使用方法
-
-1. 选择供应商预设，或选择“自定义”。
-2. 填写模型服务 URL，例如 `https://api.openai.com/v1` 或 `http://127.0.0.1:8000/v1`。
-3. 填写 API Key。无鉴权的本地服务可留空。
-4. 填写模型 ID。Azure OpenAI 场景下这里填写 deployment name。
-5. 选择调用方式，第一次排查建议使用 `auto`。
-6. 点击测试，查看状态码、请求方式、模型回答和错误分析。
-
-## 支持的调用方式
-
-- `openai_chat_completions`：OpenAI 兼容 `/chat/completions`
-- `openai_responses`：OpenAI `/responses`
-- `anthropic_messages`：Anthropic Claude `/v1/messages`
-- `azure_openai_chat_completions`：Azure OpenAI deployment 调用方式
-- `gemini_generate_content`：Google Gemini 原生 `generateContent`
-- `message_chat`：通用 `/chat`
-- `generate`：通用 `/generate`
-- `ollama_chat`：Ollama `/api/chat`
-- `ollama_generate`：Ollama `/api/generate`
-- `custom_request`：完全自定义 HTTP 请求
-- `auto`：按常见协议顺序自动尝试
-
-## 自定义 JSON 请求
-
-选择 `custom_request` 后，可填写：
-
-- HTTP 方法：`POST`、`GET`、`PUT`、`PATCH`、`DELETE`
-- 请求路径：相对路径如 `/chat/completions`，或完整 URL
-- Header JSON：例如 `{"Authorization": "Bearer {api_key}", "Content-Type": "application/json"}`
-- Body JSON：例如 `{"model": "{model}", "messages": [{"role": "user", "content": "{message}"}]}`
-
-支持占位符：
-
-```text
-{api_key}
-{model}
-{model_id}
-{deployment}
-{message}
-{temperature}
-{api_version}
-```
-
-## 项目结构
-
-```text
-LargeModelPortTest/
-├─ app/
-│  ├─ error_analysis.py
-│  ├─ providers.py
-│  └─ tester.py
-├─ static/
-│  └─ styles.css
-├─ templates/
-│  └─ index.html
-├─ main.py
-├─ requirements.txt
-├─ start.bat
-└─ README.md
-```
-
-## 上传 GitHub 前建议
-
-本项目已经提供 `.gitignore`，会排除：
-
-- `__pycache__/`
-- `.tmp/`
-- `.venv/`
-- 日志文件
-- 本地环境变量文件
-
-请不要把真实 API Key、内网服务地址截图或私有供应商配置写进仓库。
-
-## GitHub Topics 建议
-
-`python`, `fastapi`, `llm`, `openai-compatible`, `api-testing`, `model-endpoint`, `ollama`, `anthropic`, `gemini`, `azure-openai`
-
-## License
-
-如果你准备开源，建议选择 MIT License，方便社区复用和贡献供应商适配。
+- [ ] Shareable test profiles
+- [ ] Batch endpoint health checks
+- [ ] Latency charts and exportable reports
+- [ ] More provider presets from the community
